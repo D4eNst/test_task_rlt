@@ -1,0 +1,26 @@
+version: '3.1'
+
+services:
+
+  mongo:
+    image: mongo
+    restart: always
+    env_file:
+      - .env
+    ports:
+      - 27017:27017
+    volumes:
+      - ./sampleDB:/sampleDB/
+    command: mongorestore --host mongo --db database --username ${MONGO_INITDB_ROOT_USERNAME} --password ${MONGO_INITDB_ROOT_PASSWORD} --authenticationDatabase admin /sampleDB/sample_collection.bson
+
+  test_task:
+    container_name: test_task
+    restart: always
+    build:
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    volumes:
+      - .:/usr/test_task/
+    depends_on:
+      - mongo
