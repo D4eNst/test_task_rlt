@@ -79,7 +79,6 @@ async def answer(message: Message) -> None:
         dataset.append(0)
         i += 1
 
-    print(json.dumps(ans))
     await message.answer(json.dumps(ans))
 
 
@@ -101,7 +100,7 @@ async def main() -> None:
     try:
         await dp.start_polling(bot)
     finally:
-        await client.close()
+        client.close()
         await bot.session.close()
 
 
