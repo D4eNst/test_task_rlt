@@ -18,7 +18,6 @@ import utils
 TOKEN = config('TOKEN')
 router = Router()
 
-
 client = motor.motor_tornado.MotorClient(config('ME_CONFIG_MONGODB_URL'))
 db = client.database
 collection = db.sample_collection
@@ -50,12 +49,7 @@ async def answer(message: Message) -> None:
     dt_from_in_ans = datetime.strptime(formatted_dt_from_str, format_str)
     dt_upto_in_ans = datetime.strptime(formatted_dt_upto_str, format_str)
 
-    dataset = []
-
-    ans = {
-        "dataset": dataset,
-        "labels": utils.generate_time_range(dt_from_in_ans, dt_upto_in_ans, group_type)
-    }
+    labels = utils.generate_time_range(dt_from_in_ans, dt_upto_in_ans, group_type)
 
     # Транзакцию можно использовать с помощью кода
     # async with await client.start_session() as s:
@@ -64,20 +58,34 @@ async def answer(message: Message) -> None:
     pipeline = utils.get_pipline(dt_from, dt_upto, format_str)
     result = await collection.aggregate(pipeline).to_list(None)
 
-    start_date_in_answer = result[0]["_id"]
+    # Я не учел что данные за некоторые дни могут отсутствовтаь
+    # Поэтому изменил список на словарь
+    # это упростит вставку данных из запроса и решит эту проблему
 
-    i = 0
-    while i < len(ans["labels"]) and ans["labels"][i] != start_date_in_answer:
-        dataset.append(0)
-        i += 1
-
+    # i = 0
+    # while i < len(ans["labels"]) and ans["labels"][i] != start_date_in_answer:
+    #     dataset.append(0)
+    #     i += 1
+    #
+    # for item in result:
+    #
+    #     dataset.append(item["sum"])
+    #     i += 1
+    #
+    #     while i < len(ans["labels"]) and ans["labels"][i] != start_date_in_answer:
+    #         dataset.append(0)
+    #         i += 1
+    #
+    # while i < len(ans["labels"]):
+    #     dataset.append(0)
+    #     i += 1
     for item in result:
-        dataset.append(item["sum"])
-        i += 1
+        labels[item["_id"]] = item["sum"]
 
-    while i < len(ans["labels"]):
-        dataset.append(0)
-        i += 1
+    ans = {
+        "dataset": [sum_val for sum_val in labels.values()],
+        "labels": [date for date in labels.keys()]
+    }
 
     await message.answer(json.dumps(ans))
 
